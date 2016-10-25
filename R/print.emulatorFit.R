@@ -29,7 +29,7 @@ print.emulatorFit <- function(x, ...) {
     cat("\nNumber of outputs: ", x$n.outputs, "\n")
     
     cat("\nMLE of correlation parameters:\n")
-    print(x$phi.hat, print.gap = 2L, quote = FALSE)
+    print(exp(x$phi.hat), print.gap = 2L, quote = FALSE)
     
     cat("\nMaximum log likelihood:\n")
     print(x$log.lik, print.gap = 2L, quote = FALSE)
