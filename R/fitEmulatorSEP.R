@@ -11,6 +11,12 @@ fitEmulatorSEP <- function(inputs, outputs, prior.mean = "linear",
     
     inputs <- data.frame(inputs)
     outputs <- data.frame(outputs)
+    
+    # Modify output column names if equal to input column names
+    if(length(intersect(colnames(inputs), colnames(outputs))) > 0){
+      colnames(outputs) <- paste(colnames(outputs),".out", sep = "")
+    }
+    
     n.outputs <- ncol(outputs)
     n.inputs <-  ncol(inputs)
     n.train <- nrow(inputs)
