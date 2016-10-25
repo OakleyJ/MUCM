@@ -19,19 +19,19 @@ print.emulatorFit <- function(x, ...) {
         #unstack beta
         beta.mat <- matrix(x$betahat, nrow = length(x$betahat)/x$n.outputs, ncol = x$n.outputs)
         dimnames(beta.mat) <- list(c(rownames(x$betahat[1:(length(x$betahat)/x$n.outputs), ,drop = FALSE])), rownames(x$sigmasq.hat))
-        cat("\nBeta Estimates:\n")
+        cat("\nPosterior mean of beta:\n")
         print(format(beta.mat), print.gap = 2L, quote = FALSE)
     } else if (all(dim(x$betahat) > 0)) {
-        cat("\nBeta Estimates:\n")
+        cat("\nPosterior mean of beta:\n")
         print(format(x$betahat), print.gap = 2L, quote = FALSE)
     } else cat("No Beta calculated\n")
     
     cat("\nNumber of outputs: ", x$n.outputs, "\n")
     
-    cat("\nBest estimate of roughness parameters:\n")
+    cat("\nMLE of correlation parameters:\n")
     print(x$phi.hat, print.gap = 2L, quote = FALSE)
     
-    cat("\nMaximum Log likelihood:\n")
+    cat("\nMaximum log likelihood:\n")
     print(x$log.lik, print.gap = 2L, quote = FALSE)
     
     if (!is.null(x$opt.convergence)) {
