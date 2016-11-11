@@ -15,3 +15,5 @@ ByteCompile: yes
 NeedsCompilation: no
 RoxygenNote: 5.0.1
 Packaged: 2016-09-21 14:05:09 UTC; sml
+URL: https://github.com/OakleyJ/MUCM
+BugReports: https://github.com/OakleyJ/MUCM/issues
