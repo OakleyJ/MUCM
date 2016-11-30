@@ -9,7 +9,7 @@ Description: Gaussian process emulator methods based on the MUCM toolkit.
 License: GPL-2 | GPL-3
 Depends: R (>= 2.10)
 Imports: mvtnorm, Formula, fields
-Suggests: Hmisc, ggplot2
+Suggests: Hmisc, ggplot2, shiny, plotly, shinythemes
 LazyData: yes
 ByteCompile: yes
 NeedsCompilation: no
