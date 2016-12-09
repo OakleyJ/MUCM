@@ -3,7 +3,7 @@
 #' @rdname corGaussian
 #' @param period A scalar or a vector indicating the period for each input parameter. If scalar, period for all input 
 #' parameters will be set to the same scalar value as specified. Set period such that \eqn{cor(x_i, x_i + period) = 1}
-#' @details \code{corGaussianPeriodic} uses the Guassian periodic correlation function defined as 
+#' @details \code{corGaussianPeriodic} uses the Gaussian periodic correlation function defined as 
 #' \deqn{\exp(- \delta ^2 sin(\frac{\pi}{period} |x_i - x_j|)^2)}{exp( - \delta ^2 * sin (\pi/period * |(x_i - x_j)|)^2)}
 #' \code{corGaussianPeriodic2} uses a different way of accounting for 
 #' the periodicity in the data. Both \code{corGaussianPeriodic} and \code{corGaussianPeriodic2} give the same results. 

@@ -47,13 +47,13 @@ a user is able to define his own function. A user defined function must follow t
 }
 \details{
 \code{corGaussian} uses the Gaussian correlation function defined as 
-\deqn{\prod _{i=1} ^ {n} \exp [- \frac{(x_i - x_i')}{\delta _i} ^2]}{\prod _{i=1}^{n} exp(-(x_i - x_i') / \delta _i^2)}
+\deqn{\prod _{i=1} ^ {n} \exp [- (\frac{(x_i - x_i')}{\delta _i}) ^2]}{\prod _{i=1}^{n} exp(-((x_i - x_i') / \delta_i)^2)}
 
 \code{corMatern2.5} uses the Matern correlation function with \eqn{\nu = 2.5} defined as 
 \deqn{(1 + 5^{0.5}r + \frac{5}{3}r^2)\exp(-5^{0.5}r)}{(1 + (5^0.5)*r + (5*r^2)/3) * exp(-(5^0.5)*r)} where \eqn{r} is distance between inputs \eqn{x_i} and \eqn{x_j}, scaled by
 delta: \deqn{[\frac{(x_{i1}-x_{j1})^2}{\delta _1^2} +...+ \frac{(x_{id}-x_{jd})^2}{\delta_d^2}]^{0.5}}{[(x_{i1}-x_{j1})^2 / \delta_1^2 +...+ (x_{id}-x_{jd})^2 / \delta_d^2 ]^{0.5}}
 
-\code{corGaussianPeriodic} uses the Guassian periodic correlation function defined as 
+\code{corGaussianPeriodic} uses the Gaussian periodic correlation function defined as 
 \deqn{\exp(- \delta ^2 sin(\frac{\pi}{period} |x_i - x_j|)^2)}{exp( - \delta ^2 * sin (\pi/period * |(x_i - x_j)|)^2)}
 \code{corGaussianPeriodic2} uses a different way of accounting for 
 the periodicity in the data. Both \code{corGaussianPeriodic} and \code{corGaussianPeriodic2} give the same results.

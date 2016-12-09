@@ -14,7 +14,8 @@
 #' @return Returns the correlation matrix \eqn{A} calculated by the specific function.
 
 #' @details \code{corGaussian} uses the Gaussian correlation function defined as 
-#' \deqn{\prod _{i=1} ^ {n} \exp [- \frac{(x_i - x_i')}{\delta _i} ^2]}{\prod _{i=1}^{n} exp(-(x_i - x_i') / \delta _i^2)}
+#' \deqn{\prod _{i=1} ^ {n} \exp [- (\frac{(x_i - x_i')}{\delta _i}) ^2]}{\prod _{i=1}^{n} exp(-((x_i - x_i') / \delta_i)^2)}
+#' 
 #' @seealso See \code{\link{optim}} or  \code{\link{MCMCMetropolisGibbs}} where the function is used.  
 
 #' @note These functions use \code{\link{rdist}} from package \pkg{fields} for speed.
