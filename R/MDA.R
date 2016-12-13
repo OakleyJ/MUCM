@@ -29,6 +29,9 @@ MDA <- function(data.selected, data.new, n, weight.selected = NULL, weight.new =
     if (n > nrow(data.new))
         stop("n must be less than or equal to nrow(data.new)")
     
+    if (n == 0)
+        stop("n must be 1 or greater")
+    
         # check data.selected and data.new have same dimension and colnames
     if (ncol(data.selected) != ncol(data.new))
         stop("data.selected and data.new have to have the same number of columns")
