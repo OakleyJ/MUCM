@@ -17,23 +17,17 @@
 #' 
 #' # Compare predictions with true values for the new inputs
 #' # Can also compare accuracy of prediction based on posterior variance
-#' validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = TRUE, launch.browser = TRUE)
+#' validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = FALSE, launch.browser = TRUE)
 #' 
 #' @export
-validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.predictions = NULL, verbose = TRUE, ...){
+validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.predictions = NULL, verbose = FALSE, ...){
     
     if (!require(shiny)) 
         stop("this function requires R package shiny to be installed")
-    
+    if (!require(shinydashboard)) 
+        stop("this function requires R package shinydashboard to be installed")
     if (!require(plotly)) 
         stop("this function requires R package plotly to be installed")
-    
-    if (!require(shinythemes, quietly = TRUE)) {
-        theme <- NULL
-        warning("This app will look much better if you install the package 'shinythemes'")
-    } else {
-        theme <- shinytheme("united")
-    }
     
     # ensure new and old fits are backward compatible
     emulator <- updateFit(emulator)
@@ -66,87 +60,87 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
     x.axis.index <- 1:ncol(emulator$training.inputs)
     names(x.axis.index) <- colnames(emulator$training.inputs)
     
+    inputs.outputs.index <- 1:(emulator$n.outputs + ncol(emulator$training.inputs))
+    names(inputs.outputs.index) <- c(colnames(emulator$training.inputs), colnames(emulator$training.outputs))
+    
     # creating output variable list with names and indices
     output.names.index <- 1:emulator$n.outputs
     names(output.names.index) <- colnames(emulator$training.outputs)
     
-    
-    ui <- fluidPage(
+    # ui function -------------------------------------------------------------
+    ui <- dashboardPage(
+        title = "Validation", 
+        dashboardHeader(title = "Validating the Emulator Fit", titleWidth = 360), 
+        dashboardSidebar(disable = TRUE),
         
-        # setting theme
-        theme = theme,
-        
-        #include JavaScript
-        includeScript(system.file("hover_all.js", package = "MUCM")),
-        
-        
-        fluidRow(
-            #header
-            headerPanel("Validating the Emulator Fit"),
+        dashboardBody(
+            fluidRow(
+                #include JavaScript
+                includeScript(system.file("hover_all.js", package = "MUCM")),
+                
+                # intro paragraph
+                h4("This is where I will give a brief intro about this app. This app works better if you include posterior.variance in the emulator.predictions"),
+                
+                box(title = "Select output variable", status = "info", #background = "teal", 
+                    selectInput("selected.output", "Select output variable of interest", names(output.names.index)))
+            ),
             
+            fluidRow(
+                valueBoxOutput("RMSE"),
+                valueBoxOutput("NormRMSE"),
+                valueBoxOutput("Coverage")
+            ),
             
-            # intro paragraph
-            h4("This is where I will give a brief intro about this app. This app works better if you include posterior.variance in the emulator.predictions"),
-            
-            selectInput("selected.output", "Select output variable of interest", names(output.names.index)),
-            
-            # div( # or u can use shinydashboard::box()
-                textOutput("RMSE"), 
-                textOutput("NormRMSE"), 
-                textOutput("Coverage"),
-            # ),
-            
-            column(5, plotlyOutput("Approx.vs.Truth")),
-            
-            column(2, selectInput("y.variable", "Select variable for Y axis", names(y.axis.index)),
-                   selectInput("x.variable", "Select variable for X axis", names(x.axis.index))),
-            
-            column(5, plotlyOutput("training.vs.prediction.plot")),
-            
-            # explanation of the first 2 plots
-            if (verbose) {
-                fluidRow(
-                    column(5, h4("Plot showing emulator predicted output against the true output. 
+            fluidRow(
+                box(width = 5, status = "primary", background = "blue", title = "Emulator Predictions", 
+                    plotlyOutput("Approx.vs.Truth"), 
+                    if (verbose) {
+                        h4("Plot showing emulator predicted output against the true output. 
                           The error bars are the 95th percent confidence intervals of the predicted mean. 
-                          Ideally, all the points should be close to the diagonal line, which represents the one to one line, and the points should have small error bars. 
-                          If you select points using either box select or lasso select, you will be able to see this point on the plot to the left highlighted in red.")),
-                    
-                    # column(2),
-                    
-                    column(5, offset = 2, h4("Plot showing the training input and output variables based on your choice. 
-                         Select points on the right hand plot (validation points) to see where they appear in this space."))
+                           Ideally, all the points should be close to the diagonal line, which represents the one to one line, and the points should have small error bars. 
+                           If you select points using either box select or lasso select, you will be able to see this point on the plot to the left highlighted in red.")
+                    }
+                ),
+                
+                box(width = 7,  status = "primary", background = "blue", title = "Input Output Parameter Space", 
+                    column(3,
+                           selectInput("y.variable", "Select variable  for Y axis", names(inputs.outputs.index)),
+                           selectInput("x.variable", "Select variable for X axis", names(inputs.outputs.index))
+                    ),
+                    column(9,
+                           plotlyOutput("training.vs.prediction.plot")),
+                    if (verbose) {
+                        h4("Plot showing the training input and output variables based on your choice. 
+                         Select points on the right hand plot (validation points) to see where they appear in this space.")
+                    }
                 )
-            },
+            ),
+            
             
             # plot qq, pcd and MD plot
             if (post.var.given) {
                 fluidRow(
-                    column(4, plotlyOutput("qqplot")),
-                    
-                    column(4, plotlyOutput("pcd.plot")),
-                    
-                    column(4, plotlyOutput("MD.plot"))
-                )},
-            
-            # explation of the qq, pcd and MD plot
-            if (post.var.given && verbose) {
-                
-                fluidRow(
-                    column(4, h4("This is a QQ plot of Cholesky residuals. If the points lie close to the 45 degree line then the normality assumptions for the simulator output is reasonable. If the gradient of the points is greater than 1 (less than 1), it suggests that the predictive variability was underestimated (over estimated). 
-                            Curvature in the plot indicates nonnormality, and outliers at either end of the plot suggests local fitting problems or nonstationarity.")),
-                    
-                    column(4, h4("This is a Pivoted cholesky prediciton errors against the pivoting index. The pivoting index gives the order of the Pivoted cholesky prediciton errors with the largest conditional predictive variance. 
+                    box(width = 4, status = "success", background = "olive", title = "QQ plot", 
+                        plotlyOutput("qqplot"), 
+                        if (verbose)
+                            h4("This is a QQ plot of Cholesky residuals. If the points lie close to the 45 degree line then the normality assumptions for the simulator output is reasonable. If the gradient of the points is greater than 1 (less than 1), it suggests that the predictive variability was underestimated (over estimated). 
+                            Curvature in the plot indicates nonnormality, and outliers at either end of the plot suggests local fitting problems or nonstationarity.")), 
+                    box(width = 4, status = "success", background = "olive", title = "PCD plot", 
+                        plotlyOutput("pcd.plot"), 
+                        if (verbose)
+                            h4("This is a Pivoted cholesky prediciton errors against the pivoting index. The pivoting index gives the order of the Pivoted cholesky prediciton errors with the largest conditional predictive variance. 
                                 No patterns are expected. Too many large errors indicate an underestimation of variance and vice versa.Both cases can aslo suggest a nonstationary process. 
-                                Either large or very small errors at the beginning of the plot (i.e., on the left side) indicates poor estimation of predictive variance or nonstationarity. 
-                                However, large (or very small) errors at the end of the plot (i.e., on the right side) indicates overestimation (or underestimation) of the correlation length parameters, or that the chosen correlation structure is unsuitable. ")),
-                    
-                    column(4, h4("This is a plot of a normal distribution curve. The red line on the plot is the value of the calculated Mahalanobis distance taking into account correlation among outputs. Ideally it should be between the boundaries of the curve. Extreme values (large or small) indicate a conflict between the emulator and simulator. "))
+                               Either large or very small errors at the beginning of the plot (i.e., on the left side) indicates poor estimation of predictive variance or nonstationarity. 
+                               However, large (or very small) errors at the end of the plot (i.e., on the right side) indicates overestimation (or underestimation) of the correlation length parameters, or that the chosen correlation structure is unsuitable. ")), 
+                    box(width = 4, status = "success", background = "olive", title = "MD plot", plotlyOutput("MD.plot"), 
+                        if (verbose)
+                            h4("This is a plot of a normal distribution curve. The red line on the plot is the value of the calculated Mahalanobis distance taking into account correlation among outputs. Ideally it should be between the boundaries of the curve. Extreme values (large or small) indicate a conflict between the emulator and simulator. "))
                 )
             }
         )
     )
     
-    
+    # Server function ---------------------------------------------------------
     server <- function(input, output) {
         
         selectedOutput <- reactive({
@@ -217,9 +211,17 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                 mean(abs(residuals()) < qnorm(0.975) * emPredSd(), na.rm = TRUE)
         )
         
-        output$RMSE <-     renderText(paste("RMSE: ", format(rmse()), sep = ""))
-        output$NormRMSE <- renderText(paste("Normalised RMSE: ", format(normrmse()), sep = ""))
-        output$Coverage <- renderText(paste("Coverage: ", format(coverage()), sep = ""))
+        output$RMSE <- renderValueBox({
+            valueBox(paste("RMSE: ", format(rmse()), sep = ""), " ", color = "blue")
+        })
+        
+        output$NormRMSE <- renderValueBox({
+            valueBox(paste("Norm. RMSE: ", format(normrmse()), sep = " "), " ", color = "olive")
+        })
+        
+        output$Coverage <- renderValueBox({
+            valueBox(paste("Coverage: ", format(coverage()), sep = ""), " ", color = "yellow")
+        })
         
         # approximations against truth plot (with error bars if possible)
         output$Approx.vs.Truth <- renderPlotly({
@@ -227,24 +229,30 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
             
             p <- plot_ly(data, source = "Approx.vs.Truth")
             if (!is.null(emPredSd()))
-                p <- p %>% add_markers(x = ~truth, y = ~Approximations, type = "scatter", mode = "markers", error_y = ~list(value = ~sd))
+                p <- p %>% add_markers(x = ~truth, y = ~Approximations, type = "scatter", mode = "markers", error_y = ~list(value = ~sd), name = " ", hoverinfo = "text",
+                                       text = ~paste("Emulator Prediction: ", format(Approximations),
+                                                     "</br> Simulator Output: ", format(truth)))
             else 
                 p <- p %>% add_markers(x = ~truth, y = ~Approximations, type = "scatter", mode = "markers")
             
-            p <- p %>% add_trace(x = ~truth, y = ~truth, type = "scatter", mode = "lines", hoverinfo = "skip", color = I("orange")) %>%
-                layout(showlegend = FALSE, title = "Emulator Approximations against Truth",
-                       xaxis = list(title = "Truth"),
-                       yaxis = list(title = "Approximations"))
+            p <- p %>% add_trace(x = ~truth, y = ~truth, type = "scatter", mode = "lines", hoverinfo = "none", color = I("orange")) %>%
+                layout(showlegend = FALSE, title = "Emulator predictions against true simulator output",
+                       xaxis = list(title = "Simulator Output"),
+                       yaxis = list(title = "Emulator Prediction"))
             p
         })
         
         # Plot for training and prediction points
         output$training.vs.prediction.plot <- renderPlotly({
+            
+            
+            dataset <- cbind(emulator$training.outputs, emulator$training.inputs)
+            
             eventdata.selected.approx.truth <- event_data("plotly_selected", source = "Approx.vs.Truth")
             eventdata.selected.qqplot <- event_data("plotly_selected", source = "qqplot")
             eventdata.selected.pcd.plot <- event_data("plotly_selected", source = "pcd.plot")
             
-            data <- as.data.frame(cbind("x.var" = emulator$training.inputs[, input$x.variable], "y.var" = emulator$training.outputs[, input$y.variable]))
+            data <- as.data.frame(cbind("x.var" = dataset[, input$x.variable], "y.var" = dataset[, input$y.variable]))
             
             p <- plot_ly(data, x = ~x.var, y = ~y.var, type = "scatter", mode = "markers", name = "Training<br>Points", source = "training.vs.prediction.plot") %>% #, hoverinfo = 'text', text = __)
                 # add_data(x = ~truth, y = ~truth, mode = "lines", hoverinfo = "skip") %>%
@@ -252,24 +260,17 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                        xaxis = list(title = input$x.variable),
                        yaxis = list(title = input$y.variable) )
             
-            if (!is.null(eventdata.selected.approx.truth)) {
-                new.data <- as.data.frame(cbind("x.var" = new.inputs[(1 + eventdata.selected.approx.truth$pointNumber), input$x.variable], 
-                                                "y.var" = new.outputs[(1 + eventdata.selected.approx.truth$pointNumber), match(input$y.variable, names(y.axis.index))]))
-                p <- p  %>% add_markers(data = new.data, color = I("red"), name = "Validation<br>points<br>(Approx<br>Vs Truth)")#, hoverinfo = "skip") 
-            }
+            new.data <- as.data.frame(cbind(new.inputs, new.outputs))[, match(c(input$x.variable, input$y.variable), names(inputs.outputs.index))]
+            colnames(new.data) <- c("x.var", "y.var")
             
-            if (!is.null(eventdata.selected.qqplot)) {
-                new.data <- as.data.frame(cbind("x.var" = new.inputs[(1 + eventdata.selected.qqplot$pointNumber), input$x.variable], 
-                                                "y.var" = new.outputs[(1 + eventdata.selected.qqplot$pointNumber), match(input$y.variable, names(y.axis.index))]))
-                p <- p  %>% add_markers(data = new.data, color = I("darkgreen"), name = "Validation<br>points<br>(QQ plot)")#, hoverinfo = "skip") 
-            }
+            if (!is.null(eventdata.selected.approx.truth)) 
+                p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points<br>(Approx<br>Vs Truth)")#, hoverinfo = "skip") 
             
-            if (!is.null(eventdata.selected.pcd.plot)) {
-                new.data <- as.data.frame(cbind("x.var" = new.inputs[(1 + eventdata.selected.pcd.plot$pointNumber), input$x.variable], 
-                                                "y.var" = new.outputs[(1 + eventdata.selected.pcd.plot$pointNumber), match(input$y.variable, names(y.axis.index))]))
-                p <- p  %>% add_markers(data = new.data, color = I("yellow"), name = "Validation<br>points<br>(PCPE) ")#, hoverinfo = "skip") 
-            }
+            if (!is.null(eventdata.selected.qqplot)) 
+                p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.qqplot$pointNumber),], color = I("darkgreen"), name = "Validation<br>points<br>(QQ plot)")#, hoverinfo = "skip") 
             
+            if (!is.null(eventdata.selected.pcd.plot)) 
+                p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.pcd.plot$pointNumber),], color = I("yellow"), name = "Validation<br>points<br>(PCPE) ")#, hoverinfo = "skip") 
             
             p %>% layout()
             
@@ -295,7 +296,7 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                 data <- data[match(rownames(postMean()), orig.order),]
                 
                 p <- plot_ly(data, x = ~x, y = ~y, type = "scatter", mode = "markers", source = "qqplot") %>% 
-                    add_lines(x = extendrange(data[,"x"]), y = extendrange(data[,"x"]), color = I("orange"), type = "line") %>% 
+                    add_lines(x = extendrange(data[,"x"]), y = extendrange(data[,"x"]), color = I("orange"), type = "line", hoverinfo = "none") %>% 
                     layout(showlegend = FALSE, title = "Normal Q-Q plot",
                            xaxis = list(title = "Theoretical Quantiles"),
                            yaxis = list(title = "Sample Quantiles"))
@@ -315,9 +316,9 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
             y.range <- c(1,1)
             
             p <- plot_ly(data, x= ~index, y = ~chol, type = "scatter", mode = "markers", source = "pcd.plot") %>% 
-                add_lines(x = x.range, y.range*qnorm(0.975), name = "95% CI", linetype = 1, color = I("orange"), hoverinfo = "skip") %>% 
-                add_lines(x = x.range, y.range*-qnorm(0.975), name = "95% CI", linetype = 1, color = I("orange"), hoverinfo = "skip") %>% 
-                add_lines(x = x.range, y.range*0, linetype = 2, name = "95% CI", color = I("orange"), hoverinfo = "skip") %>% 
+                add_lines(x = x.range, y.range*qnorm(0.975), name = "95% CI", linetype = 1, color = I("orange"), hoverinfo = "none") %>% 
+                add_lines(x = x.range, y.range*-qnorm(0.975), name = "95% CI", linetype = 1, color = I("orange"), hoverinfo = "none") %>% 
+                add_lines(x = x.range, y.range*0, linetype = 2, name = "95% CI", color = I("orange"), hoverinfo = "none") %>% 
                 layout(showlegend = FALSE, title = "Pivoted Cholesky Prediction Errors" ,
                        xaxis = list(title = "Pivot Index"),
                        yaxis = list(title = "Pivoted Cholesky Residuals"))
@@ -339,10 +340,10 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
             
             data <- data.frame("x.plot" = x.plot, "Density" = df(x.plot, n.validation, emulator$n.train - emulator$n.regressors))
             
-            p <- plot_ly(data, x= ~x.plot, y = ~Density, type = "scatter", mode = "lines") %>% 
+            p <- plot_ly(data, x= ~x.plot, y = ~Density, type = "scatter", mode = "lines", hoverinfo = "none") %>% 
                 add_polygons(x = c(data[1:100, "x.plot"], rev(data[1:100, "x.plot"])), y = c(data[1:100, "Density"], rep(0,100)), color = I("steelblue2")) %>% 
                 add_polygons(x = c(data[201:300, "x.plot"], rev(data[201:300, "x.plot"])), y = c(data[201:300, "Density"], rep(0,100)), color = I("steelblue2")) %>% 
-                add_lines(x = c(MD.stat, MD.stat), y = range(data$Density), color = I("Orange")) %>% 
+                add_lines(x = c(MD.stat, MD.stat), y = range(data$Density), color = I("Orange"), hoverinfo = "text", text = ~paste("MD Stat: ", format(MD.stat))) %>% 
                 layout(showlegend = FALSE, title = "Mahalanobis Distance Test",
                        xaxis = list(title = "x"),
                        yaxis = list(title = "Density"))
