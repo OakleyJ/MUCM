@@ -1,3 +1,4 @@
+# global variable defining the upper limit of negloglik
 negloglik.lim <- 10 ^ 6
 
 #' @rdname negLogLik

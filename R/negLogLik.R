@@ -64,7 +64,7 @@ negLogLik <- function(theta, nugget = NULL, inputs, H, outputs, cor.function, ..
 
 
 
-#########---------- NEg Log Likelihood - Nugget version! ---------- ###########
+#########---------- Neg Log Likelihood - Nugget version! ---------- ###########
 
 #' @rdname negLogLik
 #' @export

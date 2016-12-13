@@ -13,7 +13,7 @@ fitEmulatorSEP <- function(inputs, outputs, prior.mean = "linear",
     outputs <- data.frame(outputs)
     
     # Modify output column names if equal to input column names
-    if(length(intersect(colnames(inputs), colnames(outputs))) > 0){
+    if (length(intersect(colnames(inputs), colnames(outputs))) > 0) {
       colnames(outputs) <- paste(colnames(outputs),".out", sep = "")
     }
     
