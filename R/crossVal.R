@@ -7,10 +7,10 @@
 #' @note This function requires R package \pkg{Hmisc} to be installed.
 #' @author Jeremy Oakley.
 #' @export 
-crossVal <- function(fit, lmcompare = FALSE, lmformula = fit$formula) {
+crossVal <- function(fit, lmcompare = FALSE, lmformula = fit$formula, plot = TRUE) {
     if (!requireNamespace("Hmisc", quietly = TRUE))
         stop("this function requires Hmisc to be installed")
-        
+    
     # ensure new and old fits are backward compatible
     fit <- updateFit(fit)
     
@@ -45,11 +45,11 @@ crossVal <- function(fit, lmcompare = FALSE, lmformula = fit$formula) {
     
     emulator.df <- fit$n.train - fit$n.regressors
     
-    if (!lmcompare) {
+    if (!lmcompare && plot) {
         par(mfrow = c(1,1))
         Hmisc::errbar(fit$training.outputs, cvmeans, cvmeans + qt(0.975, emulator.df) * sqrt(cvvars),
-               cvmeans - qt(0.975, emulator.df) * sqrt(cvvars), pch = 20,
-               xlab = "true value", ylab = "emulator mean")
+                      cvmeans - qt(0.975, emulator.df) * sqrt(cvvars), pch = 20,
+                      xlab = "true value", ylab = "emulator mean")
         abline(0, 1)
     }
     
@@ -60,12 +60,12 @@ crossVal <- function(fit, lmcompare = FALSE, lmformula = fit$formula) {
         par(mfrow = c(2,2))
         
         Hmisc::errbar(fit$training.outputs, cvmeans, cvmeans + qt(0.975, emulator.df) * sqrt(cvvars),
-               cvmeans - qt(0.975, emulator.df) * sqrt(cvvars), pch = 16,
-               xlab = "true value", ylab = "emulator mean")
+                      cvmeans - qt(0.975, emulator.df) * sqrt(cvvars), pch = 16,
+                      xlab = "true value", ylab = "emulator mean")
         abline(0, 1)
         
         Hmisc::errbar(fit$training.outputs, lmpredictions$fit[, 1], lmpredictions$fit[, 2],
-               lmpredictions$fit[, 3], pch = 20, xlab = "true value", ylab = "linear model fit")
+                      lmpredictions$fit[, 3], pch = 20, xlab = "true value", ylab = "linear model fit")
         abline(0, 1)
         
         plot(cvmeans, lmpredictions$fit[, 1], pch = 16, xlab = "emulator mean", 
@@ -81,5 +81,10 @@ crossVal <- function(fit, lmcompare = FALSE, lmformula = fit$formula) {
         abline(0,1)
     }
     
-    mean((cvmeans - fit$training.outputs) ^ 2) ^ 0.5
+    colnames(cvmeans) <- colnames(cvvars) <- colnames(fit$training.outputs)
+    
+    
+    rmse <- mean((cvmeans - fit$training.outputs) ^ 2) ^ 0.5
+    ret <- list(CV.mean = cvmeans, CV.var = cvvars, mean.RMSE = rmse)
+    ret
 } 
