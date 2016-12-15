@@ -4,8 +4,8 @@
 \alias{validateEmulatorApp}
 \title{validating the emulator emulator}
 \usage{
-validateEmulatorApp(emulator, new.inputs, new.outputs,
-  emulator.predictions = NULL, verbose = TRUE, ...)
+validateEmulatorApp(emulator, new.inputs = NULL, new.outputs = NULL,
+  emulator.predictions = NULL, verbose = FALSE, ...)
 }
 \arguments{
 \item{emulator}{A fit object of class inheriting from \code{'emulatorFit'}.}
@@ -34,7 +34,7 @@ predictions <- predict(fit, surfebm[26:35, 1:2], sd = FALSE, var.cov = TRUE)
 
 # Compare predictions with true values for the new inputs
 # Can also compare accuracy of prediction based on posterior variance
-validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = TRUE, launch.browser = TRUE)
+validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = FALSE, launch.browser = TRUE)
 
 }
 

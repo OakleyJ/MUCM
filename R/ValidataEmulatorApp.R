@@ -20,7 +20,7 @@
 #' validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = FALSE, launch.browser = TRUE)
 #' 
 #' @export
-validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.predictions = NULL, verbose = FALSE, ...){
+validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL, emulator.predictions = NULL, verbose = FALSE, ...){
     
     if (!require(shiny)) 
         stop("this function requires R package shiny to be installed")
@@ -32,9 +32,15 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
     # ensure new and old fits are backward compatible
     emulator <- updateFit(emulator)
     
+    # defining a variable to indicate if using Crossvalidation data
+    if (is.null(new.inputs) && (is.null(new.outputs)))
+        CV <- TRUE
+    else 
+        CV <- FALSE
+    
     # if emulator.predictions is not given, calculate it with var.cov = T
     # determine whether it is possible to get post.var, 
-    if (is.null(emulator.predictions)) {
+    if (is.null(emulator.predictions) && !CV) {
         emulator.predictions <- predict(emulator, new.inputs, var.cov = T)
         post.var.given <- TRUE
     } else if (!is.null(emulator.predictions$posterior.variance))
@@ -44,14 +50,16 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
     else 
         post.var.given <- FALSE
     
-    # extract output from newdata
-    new.outputs <- as.matrix(new.outputs)
-    
-    n.validation <- nrow(new.outputs)
-    
-    # check if training.output and validation output are of same size
-    if (emulator$n.outputs != ncol(new.outputs)) 
-        stop("new.outputs is not the same size as outputs used in fitEmulator pls check new.outputs with emulator.predictions$posterior.mean")
+    if (!CV) {
+        # extract output from newdata
+        new.outputs <- as.matrix(new.outputs)
+        n.validation <- nrow(new.outputs)
+        # check if training.output and validation output are of same size
+        if (emulator$n.outputs != ncol(new.outputs)) 
+            stop("new.outputs is not the same size as outputs used in fitEmulator pls check new.outputs with emulator.predictions$posterior.mean")
+    } else {
+        CV.predict <- crossVal(emulator, lmcompare = FALSE, plot = FALSE)
+    }
     
     # creating output variable list with names and indices
     y.axis.index <- 1:emulator$n.outputs
@@ -70,7 +78,12 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
     # ui function -------------------------------------------------------------
     ui <- dashboardPage(
         title = "Validation", 
-        dashboardHeader(title = "Validating the Emulator Fit", titleWidth = 360), 
+        
+        if (CV) {
+            dashboardHeader(title = "Validating the Emulator Fit using Leave one out Cross Validation", titleWidth = 700) 
+        } else
+            dashboardHeader(title = "Validating the Emulator Fit using new inputs and new outputs", titleWidth = 700), 
+        
         dashboardSidebar(disable = TRUE),
         
         dashboardBody(
@@ -81,8 +94,12 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                 # intro paragraph
                 h4("This is where I will give a brief intro about this app. This app works better if you include posterior.variance in the emulator.predictions"),
                 
-                box(title = "Select output variable", status = "info", #background = "teal", 
-                    selectInput("selected.output", "Select output variable of interest", names(output.names.index)))
+                box(width = 4, title = "Select output variable", status = "info", #background = "teal", 
+                    selectInput("selected.output", "Select output variable of interest", names(output.names.index))),
+                
+                if (CV)
+                    valueBox("Cross Validation", icon = icon(""), subtitle = " ", color = "lime", width = 4)
+                
             ),
             
             fluidRow(
@@ -105,7 +122,7 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                 box(width = 7,  status = "primary", background = "blue", title = "Input Output Parameter Space", 
                     column(3,
                            selectInput("y.variable", "Select variable  for Y axis", names(inputs.outputs.index)),
-                           selectInput("x.variable", "Select variable for X axis", names(inputs.outputs.index))
+                           selectInput("x.variable", "Select variable for X axis", names(inputs.outputs.index), selected = names(inputs.outputs.index)[2])
                     ),
                     column(9,
                            plotlyOutput("training.vs.prediction.plot")),
@@ -115,7 +132,6 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                     }
                 )
             ),
-            
             
             # plot qq, pcd and MD plot
             if (post.var.given) {
@@ -148,7 +164,11 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
         })
         
         postMean <- reactive({
-            if (emulator$n.outputs == 1) {
+            if (CV) {
+                if (emulator$n.outputs == 1)
+                    post.mean <- CV.predict$CV.mean
+                else post.mean <- CV.predict$CV.mean[, selectedOutput(), drop = FALSE]
+            }else if (emulator$n.outputs == 1) {
                 post.mean <- emulator.predictions$posterior.mean
             } else { 
                 post.mean <- emulator.predictions$posterior.mean[, selectedOutput(), drop = FALSE] 
@@ -174,7 +194,12 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
         
         emPredSd <- reactive({
             
-            if (!is.null(postVar()))
+            if (CV) {
+                if (emulator$n.outputs == 1)
+                    em.pred.sd <- sqrt(CV.predict$CV.var)
+                else 
+                    em.pred.sd <- sqrt(CV.predict$CV.var[, selectedOutput(), drop = FALSE])
+            } else if (!is.null(postVar()))
                 em.pred.sd <- matrix(sqrt(diag(postVar())), ncol = 1)
             else {
                 if (emulator$n.outputs == 1) {
@@ -192,36 +217,35 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
         })
         
         newOutputs <- reactive({
-            if (emulator$n.outputs != 1) 
-                new.outputs <- new.outputs[, selectedOutput(), drop = FALSE]
-            else 
-                new.outputs <- new.outputs
-            
+            if (!CV) {
+                if (emulator$n.outputs != 1) 
+                    new.outputs <- new.outputs[, selectedOutput(), drop = FALSE]
+                else 
+                    new.outputs <- new.outputs
+            } else {
+                if (emulator$n.outputs != 1) 
+                    new.outputs <- emulator$training.output[, selectedOutput(), drop = FALSE]
+                else 
+                    new.outputs <- emulator$training.output
+                
+            }
             new.outputs
         })
         
         # calculate RMSE and NormRMSE in all cases
         residuals <- reactive(newOutputs() - postMean())
-        
-        rmse <- reactive(sqrt(mean((residuals()) ^ 2)))
+        rmse <- reactive({sqrt(mean((residuals()) ^ 2))})
         normrmse <- reactive(rmse()/(max(newOutputs()) - min(newOutputs())))
-        
         coverage <- reactive(
             if (!is.null(emPredSd()))
                 mean(abs(residuals()) < qnorm(0.975) * emPredSd(), na.rm = TRUE)
         )
         
-        output$RMSE <- renderValueBox({
-            valueBox(paste("RMSE: ", format(rmse()), sep = ""), " ", color = "blue")
-        })
+        output$RMSE <- renderValueBox(valueBox(paste("RMSE: ", format(rmse()), sep = ""), " ", color = "teal"))
         
-        output$NormRMSE <- renderValueBox({
-            valueBox(paste("Norm. RMSE: ", format(normrmse()), sep = " "), " ", color = "olive")
-        })
+        output$NormRMSE <- renderValueBox(valueBox(paste("Norm. RMSE: ", format(normrmse()), sep = " "), " ", color = "olive"))
         
-        output$Coverage <- renderValueBox({
-            valueBox(paste("Coverage: ", format(coverage()), sep = ""), " ", color = "yellow")
-        })
+        output$Coverage <- renderValueBox(valueBox(paste("Coverage: ", format(coverage()), sep = ""), " ", color = "yellow"))
         
         # approximations against truth plot (with error bars if possible)
         output$Approx.vs.Truth <- renderPlotly({
@@ -244,8 +268,6 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
         
         # Plot for training and prediction points
         output$training.vs.prediction.plot <- renderPlotly({
-            
-            
             dataset <- cbind(emulator$training.outputs, emulator$training.inputs)
             
             eventdata.selected.approx.truth <- event_data("plotly_selected", source = "Approx.vs.Truth")
@@ -260,20 +282,25 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
                        xaxis = list(title = input$x.variable),
                        yaxis = list(title = input$y.variable) )
             
-            new.data <- as.data.frame(cbind(new.inputs, new.outputs))[, match(c(input$x.variable, input$y.variable), names(inputs.outputs.index))]
-            colnames(new.data) <- c("x.var", "y.var")
-            
-            if (!is.null(eventdata.selected.approx.truth)) 
-                p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points<br>(Approx<br>Vs Truth)")#, hoverinfo = "skip") 
-            
-            if (!is.null(eventdata.selected.qqplot)) 
-                p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.qqplot$pointNumber),], color = I("darkgreen"), name = "Validation<br>points<br>(QQ plot)")#, hoverinfo = "skip") 
-            
-            if (!is.null(eventdata.selected.pcd.plot)) 
-                p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.pcd.plot$pointNumber),], color = I("yellow"), name = "Validation<br>points<br>(PCPE) ")#, hoverinfo = "skip") 
-            
+            if (CV) { 
+                if (!is.null(eventdata.selected.approx.truth)) 
+                    p <- p  %>% add_markers(data = data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points")#, hoverinfo = "skip") 
+            } else {
+                
+                new.data <- as.data.frame(cbind(new.inputs, new.outputs))[, match(c(input$x.variable, input$y.variable), names(inputs.outputs.index))]
+                colnames(new.data) <- c("x.var", "y.var")
+                
+                if (!is.null(eventdata.selected.approx.truth)) 
+                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points<br>(Approx<br>Vs Truth)")#, hoverinfo = "skip") 
+                
+                
+                if (!is.null(eventdata.selected.qqplot)) 
+                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.qqplot$pointNumber),], color = I("darkgreen"), name = "Validation<br>points<br>(QQ plot)")#, hoverinfo = "skip") 
+                
+                if (!is.null(eventdata.selected.pcd.plot)) 
+                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.pcd.plot$pointNumber),], color = I("yellow"), name = "Validation<br>points<br>(PCPE) ")#, hoverinfo = "skip") 
+            }
             p %>% layout()
-            
         })
         
         # Calculate cholecky residuals for next 2 plot
@@ -340,7 +367,7 @@ validateEmulatorApp <- function(emulator, new.inputs, new.outputs, emulator.pred
             
             data <- data.frame("x.plot" = x.plot, "Density" = df(x.plot, n.validation, emulator$n.train - emulator$n.regressors))
             
-            p <- plot_ly(data, x= ~x.plot, y = ~Density, type = "scatter", mode = "lines", hoverinfo = "none") %>% 
+            p <- plot_ly(data, x = ~x.plot, y = ~Density, type = "scatter", mode = "lines", hoverinfo = "none") %>% 
                 add_polygons(x = c(data[1:100, "x.plot"], rev(data[1:100, "x.plot"])), y = c(data[1:100, "Density"], rep(0,100)), color = I("steelblue2")) %>% 
                 add_polygons(x = c(data[201:300, "x.plot"], rev(data[201:300, "x.plot"])), y = c(data[201:300, "Density"], rep(0,100)), color = I("steelblue2")) %>% 
                 add_lines(x = c(MD.stat, MD.stat), y = range(data$Density), color = I("Orange"), hoverinfo = "text", text = ~paste("MD Stat: ", format(MD.stat))) %>% 
