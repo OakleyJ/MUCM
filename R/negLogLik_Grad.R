@@ -18,6 +18,11 @@
 #' @export
 negLogLik_Grad <- function(theta, inputs, H, outputs, cor.function, nugget = NULL) {
     
+    # Returns the derivative of -log likelihood, with respect to phi = log (delta),
+    # assuming Gaussian correlation function
+    # c(x, x') = exp[-{(x-x') / delta}^2]
+    # Note: original code differentiatied w.r.t. 2*phi, so end result is multiplied by 2
+    
     ncol.inputs <- ncol(inputs)
     n <- nrow(inputs)
     n.regressors <- ncol(H)
@@ -65,5 +70,5 @@ negLogLik_Grad <- function(theta, inputs, H, outputs, cor.function, nugget = NUL
     
     # attr(negloglik, "gradient") <- J * gout
     
-    return(J * gout)
+    return(2 * J * gout)
 }
