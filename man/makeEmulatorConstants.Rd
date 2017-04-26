@@ -38,10 +38,9 @@ The function returns a list containting some components as the \code{emulatorFit
 \description{
 Function for collating and calculating constants needed for fitting the emulator
 }
-\author{
-Originally written by Jeremy Oakley. Modified by Sajni Malde
-}
 \references{
 J. Oakley 1999. 'Bayesian uncertainty analysis for complex computer codes', PhD thesis, University of Sheffield.
 }
-
+\author{
+Originally written by Jeremy Oakley. Modified by Sajni Malde
+}

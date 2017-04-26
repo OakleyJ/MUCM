@@ -19,4 +19,3 @@ Function to sample from posterior Gaussian process
 \author{
 Jeremy Oakley.
 }
-

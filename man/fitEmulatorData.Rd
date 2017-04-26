@@ -44,4 +44,3 @@ print(predictions$posterior.mean)
 \seealso{
 If input and output data is in different objects, see \code{\link{fitEmulator}} as a more conveniant method.
 }
-

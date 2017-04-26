@@ -25,4 +25,3 @@ This function requires R package \pkg{Hmisc} to be installed.
 \author{
 Jeremy Oakley.
 }
-

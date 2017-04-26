@@ -37,4 +37,3 @@ predictions <- predict(fit, surfebm[26:35, 1:2], sd = FALSE, var.cov = TRUE)
 validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = FALSE, launch.browser = TRUE)
 
 }
-

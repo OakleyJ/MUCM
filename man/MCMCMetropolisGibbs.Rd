@@ -45,4 +45,3 @@ Note that this function first calculates the negetive log likelihood of the star
 \author{
 Originally written by Jeremy Oakley. Modified by Sajni Malde
 }
-

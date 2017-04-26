@@ -11,7 +11,7 @@
 #' @param cor.function Specifies a correlation function used as part of the prior information for the emulator
 #' @param ... additional arguments to be passed on to correlation functions (see \code{\link{corGaussian}})
 #' @param nugget  For noisy data, a vector giving the observation variance for each training data point. 
-#' @return The function returns the negetive log-likelihood of \code{theta}
+#' @return The function returns the negative log-likelihood of \code{theta}
 #' @seealso \code{\link{corGaussian}}
 #' @author Sajni Malde, Jeremy Oakley
 

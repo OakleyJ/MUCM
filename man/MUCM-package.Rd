@@ -2,8 +2,8 @@
 % Please edit documentation in R/MUCM-package.R
 \docType{package}
 \name{MUCM-package}
-\alias{MUCM}
 \alias{MUCM-package}
+\alias{MUCM}
 \title{MUCM}
 \description{
 This package allows the user to estimate the output of a simulator at any point,
@@ -30,13 +30,12 @@ predictions <- predict(fit, surfebm[26:35, 1:2], sd = FALSE, var.cov = TRUE)
 # Can also compare accuracy of prediction based on posterior variance
 validateEmulator(fit, surfebm[26:35, 3], predictions, plot = TRUE)
 }
-\author{
-Sajni Malde, Jeremy Oakley (\email{j.oakley@sheffield.ac.uk}) and David Wyncoll.
-}
 \references{
 J. Oakley 1999. 'Bayesian uncertainty analysis for complex computer codes', PhD thesis, University of Sheffield.
 \cr Bastos, L. S. and O'Hagan, A. (2009). Diagnostics for gaussian process emulators, Technometrics, 51 (4): 425-438.
 \cr Fricker, T. E., Oakley, J. E., & Urban, N. M. (2013). Multivariate Gaussian process emulators with nonseparable 
      covariance structures. Technometrics, 55(1), 47-56.
 }
-
+\author{
+Sajni Malde, Jeremy Oakley (\email{j.oakley@sheffield.ac.uk}) and David Wyncoll.
+}

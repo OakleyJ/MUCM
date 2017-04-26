@@ -70,10 +70,9 @@ cov(new.out.pca)
                                    ncol = 2), only.var = FALSE)[1,,])
 # backpredict.var should be very close to cov(out)
 }
-\author{
-Sajni Malde
-}
 \seealso{
 \code{\link{princomp}}, \code{\link{prcomp}}, \code{\link{predict.prcomp}}
 }
-
+\author{
+Sajni Malde
+}

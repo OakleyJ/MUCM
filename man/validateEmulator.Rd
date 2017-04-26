@@ -41,13 +41,12 @@ Either large or very small errors at the beginning of the plot (i.e., on the lef
 However, large (or very small) errors at the end of the plot (i.e., on the right side) indicates overestimation (or underestimation) of the correlation length parameters, or that the chosen correlation structure is unsuitable. \cr
 Bottom right Plot \tab The red line on the plot is the value of the calculated Mahalanobis distance taking into account correlation among outputs. Ideally it should be between the boundaries of the curve. Extreme values (large or small) indicate a conflict between the emulator and simulator.   \cr }
 }
-\author{
-Originally written by Jeremy Oakley. Modified by Sajni Malde
-}
 \references{
 Bastos, L. S. and O'Hagan, A. (2009). Diagnostics for gaussian process emulators, Technometrics, 51 (4): 425-438.
 }
 \seealso{
 \code{\link{predict.emulatorFit}} and \code{\link{fitEmulator}}
 }
-
+\author{
+Originally written by Jeremy Oakley. Modified by Sajni Malde
+}

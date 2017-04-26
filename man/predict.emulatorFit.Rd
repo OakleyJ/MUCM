@@ -45,10 +45,9 @@ This function should be preceded by the \code{\link{fitEmulator}} function.
 \details{
 Note that when using the LMC method, calculating the posterior variance is quite time-consuming.
 }
-\author{
-Originally written by Jeremy Oakley. Modified by Sajni Malde.
-}
 \references{
 Oakley, J. (1999). Bayesian uncertainty analysis for complex computer codes, Ph.D. thesis, University of Sheffield.
 }
-
+\author{
+Originally written by Jeremy Oakley. Modified by Sajni Malde.
+}

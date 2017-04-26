@@ -38,4 +38,3 @@ Selects a subset of events by maximizing the dissimilarity between selected samp
 \author{
 Sajni Malde
 }
-

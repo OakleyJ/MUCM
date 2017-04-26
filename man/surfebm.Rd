@@ -14,4 +14,3 @@ This is an example dataset used in package.
 \author{
 Jeremy Oakley
 }
-

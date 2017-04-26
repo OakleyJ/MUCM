@@ -19,4 +19,3 @@ code to allow for improvements to be made within the code.
 \note{
 A warning is issued if the object is updated.
 }
-

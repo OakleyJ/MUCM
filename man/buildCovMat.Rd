@@ -28,4 +28,3 @@ This function is used to build a covariance matrix for multivariate outputs.
 \author{
 Sajni Malde
 }
-

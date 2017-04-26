@@ -29,4 +29,3 @@ This function requires R package \pkg{ggplot2} to be installed.
 \author{
 Jeremy Oakley.
 }
-
