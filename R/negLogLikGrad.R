@@ -25,6 +25,12 @@ doA <- function(inputs){(rdist(inputs) ^ 2)}
 #' @export
 negLogLikGrad <- function(theta, inputs, H, outputs, nugget = NULL, ...) {
     
+    # Returns the derivative of -log likelihood, with respect to phi = log (delta),
+    # assuming Gaussian correlation function
+    # c(x, x') = exp[-{(x-x') / delta}^2]
+    # Note: original code differentiatied w.r.t. 2*phi, so end result is multiplied by 2
+    
+    
     ncol.inputs <- ncol(inputs)
     n <- nrow(inputs)
     n.regressors <- ncol(H)
@@ -33,7 +39,9 @@ negLogLikGrad <- function(theta, inputs, H, outputs, nugget = NULL, ...) {
     # transformed roughness parameters
     
     #part of makeAdat
-    Phi <- diag(1/exp(theta[1:ncol.inputs]/2))
+    #Phi <- diag(1/exp(theta[1:ncol.inputs]/2)) # if theta = 2 * log delta
+    Phi <- diag(1/exp(theta[1:ncol.inputs])) # if theta = log delta
+    
     nug <- 0 #  1/(1 + exp(-theta[ncol.inputs + 1]))
     inputs.phi <- inputs %*% Phi 
     Dk <- lapply(1:ncol.inputs, function(k) doA(inputs.phi[, k, drop = FALSE]))  
@@ -94,9 +102,10 @@ negLogLikGrad <- function(theta, inputs, H, outputs, nugget = NULL, ...) {
     gout <- sapply(gradA, function(x) (1 - n + n.regressors) * sum(diag(P %*% x)) + (n - n.regressors) * sum(diag(R %*% x)))
     
     # gout <- c(gout, sum(diag(iA %*% gnug)))
-    J <- c(0.5 * exp(theta[1:ncol.inputs]/2))#, exp(-theta[ncol.inputs + 1]) * nug^2)
+    #J <- c(0.5 * exp(theta[1:ncol.inputs]/2))# , exp(-theta[ncol.inputs + 1]) * nug^2) # if theta = 2 * log delta
+    J <- c(0.5 * exp(theta[1:ncol.inputs]))#  if theta = log delta
     
-    attr(negloglik, "gradient") <- J * gout
+    attr(negloglik, "gradient") <- 2 * J * gout
     
     return(negloglik)
 }
