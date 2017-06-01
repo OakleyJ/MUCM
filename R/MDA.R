@@ -33,7 +33,7 @@ MDA <- function(data.selected, data.new, n, weight.selected = NULL, weight.new =
     if (n == 0)
         stop("n must be 1 or greater")
     
-        # check data.selected and data.new have same dimension and colnames
+    # check data.selected and data.new have same dimension and colnames
     if (ncol(data.selected) != ncol(data.new))
         stop("data.selected and data.new have to have the same number of columns")
     if (any(colnames(data.selected) != colnames(data.new)))
@@ -70,33 +70,32 @@ MDA <- function(data.selected, data.new, n, weight.selected = NULL, weight.new =
         scaled.new <- data.new
     }
     
+    # Calculate the distance with weight
+    diss.mat <- rdist(scaled.selected, scaled.new) 
+    if (!(is.null(weight.selected) && is.null(weight.new))) 
+        diss.mat <- tcrossprod(weight.selected, weight.new) * diss.mat
+    diss.to.selected <- apply(diss.mat, 2, min)
+    
     # Initialise output data
     selected.id <- NULL 
     
-    data.new.ids <- 1:nrow(data.new)
-    
     for (i in 1:n) {
-
-        #calculate the distance
-        diss <- rdist(scaled.selected, scaled.new[data.new.ids, ]) 
         
-        # incorporate weighting if necessary
-        if (!(is.null(weight.selected) && is.null(weight.new))) 
-            diss <- tcrossprod(weight.selected, weight.new[data.new.ids]) * diss
+        # Pick max diss point
+        to.add.id <- which.max(diss.to.selected)
+        selected.id <- c(selected.id, to.add.id)
         
-        # choose maximum dissimilar point 
-        chosen <- data.new.ids[which.max(apply(diss, 2, min))]
+        # Add new dist row
+        if (!(is.null(weight.selected) && is.null(weight.new))){
+            diss.row <- rdist(scaled.new[to.add.id, ], scaled.new) * 
+                weight.new[to.add.id] * weight.new
+        }else{
+            diss.row <- rdist(scaled.new[to.add.id, ], scaled.new)
+        }
         
-        # add it to selected id and subset (Not scaled!)
-        selected.id <- c(selected.id, chosen)
+        # Update diss to select
+        diss.to.selected <- pmin(diss.row, diss.to.selected)
         
-        # add selected point to set 1 (and weight.selected) to prepare for next iteration
-        scaled.selected <- rbind(scaled.selected, scaled.new[chosen, , drop = FALSE])
-        
-        if (!(is.null(weight.selected) && is.null(weight.new)))
-            weight.selected <- c(weight.selected, weight.new[data.new.ids[data.new.ids %in% chosen]])
-        
-        data.new.ids <- setdiff(data.new.ids, chosen)
     }
     
     # set object to return
@@ -117,3 +116,4 @@ MDA <- function(data.selected, data.new, n, weight.selected = NULL, weight.new =
     
     ret 
 }
+
