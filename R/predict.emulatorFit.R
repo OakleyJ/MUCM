@@ -59,7 +59,7 @@ predict.emulatorFit <- function(object, newdata, var.cov = FALSE, sd = TRUE, tol
     
     H.pred <- model.matrix(object$formula, data = as.data.frame(new.inputs), lhs = 0, drop = FALSE)
     
-    cov.training.prediction <- do.call(object$cor.function, c(list(new.inputs, object$training.inputs, object$phi), object$cor.function.args))
+    cov.training.prediction <- do.call(object$cor.function, c(list(new.inputs, object$training.inputs, object$phi.hat), object$cor.function.args))
     
     post.mean <- H.pred %*% object$betahat + cov.training.prediction %*% object$Ainv.e
     predict <- list(posterior.mean = post.mean)
