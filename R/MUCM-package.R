@@ -38,8 +38,6 @@
 #' # Compare predictions with true values for the new inputs
 #' # Can also compare accuracy of prediction based on posterior variance
 #' validateEmulator(fit, surfebm[26:35, 3], predictions, plot = TRUE)
-#' @importFrom Rcpp evalCpp
-#' @useDynLib MUCM
 {
 } 
 
