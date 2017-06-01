@@ -17,7 +17,8 @@
 #'        If \code{TRUE} it returns indices of the selected events in \code{data.new}.
 #' 
 #' @return If \code{index = FALSE} the function returns a matrix (or data.frame) of selected events.
-#'         Otherwise it returns the indices of the selected events in \code{data.new} named with row names if available.
+#'         Otherwise it returns the indices of the selected events in \code{data.new} in terms of the row number
+#'         or the row name (if available).
 #' 
 #' @author Sajni Malde
 #' 
@@ -100,14 +101,19 @@ MDA <- function(data.selected, data.new, n, weight.selected = NULL, weight.new =
     
     # set object to return
     if (index) {
+        
+        # return row numbers if data.new is a matrix
         ret <- selected.id
         
-        # add names, if available
+        # return names, if data.new is a data.frame
         if (!is.null(rownames(data.new)))
-            names(ret) <- rownames(data.new)[selected.id]
+            ret <- rownames(data.new)[selected.id]
         
-    } else
+    } else{
+        
         ret <- data.new[selected.id, , drop = FALSE]
+        
+    }
     
     ret 
 }
