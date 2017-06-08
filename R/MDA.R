@@ -87,10 +87,10 @@ MDA <- function(data.selected, data.new, n, weight.selected = NULL, weight.new =
         
         # Add new dist row
         if (!(is.null(weight.selected) && is.null(weight.new))){
-            diss.row <- rdist(scaled.new[to.add.id, ], scaled.new) * 
+            diss.row <- rdist(scaled.new[to.add.id, ,drop=FALSE], scaled.new) * 
                 weight.new[to.add.id] * weight.new
         }else{
-            diss.row <- rdist(scaled.new[to.add.id, ], scaled.new)
+            diss.row <- rdist(scaled.new[to.add.id, ,drop=FALSE], scaled.new)
         }
         
         # Update diss to select
