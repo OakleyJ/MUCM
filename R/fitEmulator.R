@@ -36,9 +36,11 @@
 #' @param method Can take string \code{'seperable'} (default) or \code{'LMC'}. The seperable method is used for univariate output. For multivariate output, this distinction is more important. 
 #'        The separable emulator restricts the model to have just one set of hyper-parameters that are shared across all outputs, however the LMC (Linear model of coregionalisation) emulator
 #'        allows for flexibilty of individual hyper-parameters for each output. See the references for further information.
-#' @param optim.method  The optimisation method to use for estimation of the unknown hyper-parameters. See \code{\link{optim}}.
-#' @param optimise.interval  For \code{optim.method = "Brent"} with only one parameter to be estimated,
+#' @param optim.method  The optimisation method to use for estimation of the unknown hyper-parameters. See \code{\link{optim}}. If \code{optim.method = "Brent"} then optimise will be called instead
+#'        and MCMC will not be carried as starting values are not used. 
+#' @param optimise.interval  Where\code{optim.method = "Brent"} ( use only one parameter needs to be estimated),
 #'        a vector passed on to \code{\link{optimise}} containing the interval to search within.
+#' @param optim.gr An optional argument allowing the user to specify a gradient function for \code{\link{optim}}.
 #' @param ... Additional arguments to be used for \code{fitEmulator} and passed on to correlation functions.
 
 #' @return \code{fitEmulator} returns an object of class 'emulatorFit'. 

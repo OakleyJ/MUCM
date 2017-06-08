@@ -6,7 +6,7 @@ fitEmulatorSEP <- function(inputs, outputs, prior.mean = "linear",
                            MCMC.iterations = 50,   
                            phi.init, sigmasq.init,
                            MC.plot = FALSE, nugget = NULL,
-                           optim.method = "BFGS",
+                           optim.method = "BFGS", optim.gr = NULL,
                            optimise.interval, ...) {
     
     inputs <- data.frame(inputs)
@@ -231,7 +231,8 @@ fitEmulatorSEP <- function(inputs, outputs, prior.mean = "linear",
             }
             
             opt <- optim(theta.init, fn, method = optim.method, inputs = scaled.inputs, H = H.training, 
-                         outputs = outputs, cor.function = cor.function, nugget = nugget,...)
+                         outputs = outputs, cor.function = cor.function, nugget = nugget,
+                         gr = optim.gr, ...)
             theta.opt <- opt$par
             log.lik <- -opt$value
             
