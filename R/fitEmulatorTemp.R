@@ -2,7 +2,7 @@
 
 #' @export
 fitEmulatorTemp <- function(inputs, outputs, prior.mean = "linear",                            
-                            cor.function = corGaussian, phi.opt, sigmasq.opt = NULL, fn.grad = NULL, optim = TRUE,
+                            cor.function = corGaussian, phi.opt, sigmasq.opt = NULL, optim.fn = NULL, fn.grad = NULL, optim = TRUE,
                             MCMC.iterations = 50,   
                             phi.init, sigmasq.init,
                             MC.plot = FALSE, nugget = NULL,
@@ -40,7 +40,9 @@ fitEmulatorTemp <- function(inputs, outputs, prior.mean = "linear",
     
     # Set likelihood function according to what needs to be estimated - phi, and/or sigma, or none
     
-    if(optim)
+    if (!is.null(optim.fn))
+        fn <- optim.fn
+    else if (optim)
         fn <- negLogLik
     else 
         fn <- negLogLikGrad
@@ -157,7 +159,7 @@ fitEmulatorTemp <- function(inputs, outputs, prior.mean = "linear",
     fit$phi.MCMC.scaled <- theta.MCMC
     fit$phi.hat = phi.opt
     fit$training.inputs = as.matrix(inputs)
-    # fit$log.lik <- log.lik
+    fit$log.lik <- log.lik
     fit$n.train <- n.train
     fit$n.outputs <- n.outputs
     fit$formula = formula

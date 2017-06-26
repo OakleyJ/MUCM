@@ -24,10 +24,10 @@ fitEmulatorSEP(inputs, outputs, prior.mean = "linear",
   optim.method = "BFGS", optimise.interval, ...)
 
 fitEmulatorTemp(inputs, outputs, prior.mean = "linear",
-  cor.function = corGaussian, phi.opt, sigmasq.opt = NULL, fn.grad = NULL,
-  optim = TRUE, MCMC.iterations = 50, phi.init, sigmasq.init,
-  MC.plot = FALSE, nugget = NULL, optim.method = "BFGS",
-  optimise.interval, ...)
+  cor.function = corGaussian, phi.opt, sigmasq.opt = NULL,
+  optim.fn = NULL, fn.grad = NULL, optim = TRUE, MCMC.iterations = 50,
+  phi.init, sigmasq.init, MC.plot = FALSE, nugget = NULL,
+  optim.method = "BFGS", optimise.interval, ...)
 
 \method{fitted}{emulatorFit}(object, ...)
 

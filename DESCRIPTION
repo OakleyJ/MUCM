@@ -7,12 +7,22 @@ Author: Sajni Malde, Jeremy Oakley, David Wyncoll
 Maintainer: Jeremy Oakley <j.oakley@sheffield.ac.uk>
 Description: Gaussian process emulator methods based on the MUCM toolkit.
 License: GPL-2 | GPL-3
-Depends: R (>= 2.10)
-Imports: mvtnorm, Formula, fields
-Suggests: Hmisc, ggplot2, shiny, plotly, shinythemes
+Depends:
+    R (>= 2.10), Rcpp, RcppEigen
+Imports:
+    mvtnorm,
+    Formula,
+    fields
+Suggests:
+    Hmisc,
+    ggplot2,
+    shiny,
+    plotly,
+    shinythemes
 LazyData: yes
 ByteCompile: yes
 NeedsCompilation: no
 RoxygenNote: 6.0.1
 URL: https://github.com/OakleyJ/MUCM
 BugReports: https://github.com/OakleyJ/MUCM/issues
+LinkingTo: Rcpp, RcppEigen
