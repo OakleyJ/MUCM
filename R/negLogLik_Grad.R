@@ -1,8 +1,7 @@
-#' @title Negative Log Likelihood Functions
+#' @title Gradient function 
 
-#' @description These functions are minimised to find the optimal value of theta (or phi and sigma in LMC case). 
-#'              \code{negLogLikNugget} is used in the univariate case for uncertain input parameters.
-#'              \code{negLogLikLMC} is used when applying the LMC Emulator for Multivariate models
+#' @description This function can be used when specifying the gradient for the optimisation in the \code{\link{fitEmulator}} function. 
+#' Please note this is the closed form gradient function to be used with \code{cor.function} set as \code{\link{corGaussian}} (which is the default).
 #' @param theta Initial values for the parameters to be optimized over. (includes values for all the parameters that need to be estimated.)
 #'        For \code{negLogLik}, theta represents just phi, for \code{negLogLikNugget}, theta represents just phi and sigma combined.
 #' @param inputs A data frame, matrix or vector containing the input values of the training data.
@@ -11,10 +10,9 @@
 #' @param cor.function Specifies a correlation function used as part of the prior information for the emulator
 #' @param ... additional arguments to be passed on to correlation functions (see \code{\link{corGaussian}})
 #' @param nugget  For noisy data, a vector giving the observation variance for each training data point. 
-#' @return The function returns the negetive log-likelihood of \code{theta}
+#' @return The function returns the negetive log-likelihood of \code{theta}. (Not implemented currently)
 #' @seealso \code{\link{corGaussian}}
 #' @author Sajni Malde, Jeremy Oakley
-
 #' @export
 negLogLik_Grad <- function(theta, inputs, H, outputs, cor.function, nugget = NULL) {
     
@@ -74,3 +72,7 @@ negLogLik_Grad <- function(theta, inputs, H, outputs, cor.function, nugget = NUL
     
     return(2 * J * gout)
 }
+
+
+#' @export
+doA <- function(inputs){(rdist(inputs) ^ 2)}
