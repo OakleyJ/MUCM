@@ -24,6 +24,7 @@ negLogLik_Grad <- function(theta, inputs, H, outputs, cor.function, nugget = NUL
     ncol.inputs <- ncol(inputs)
     n <- nrow(inputs)
     n.regressors <- ncol(H)
+    negLogLikGrad.lim <- rep(negloglik.lim, length(theta))
     # negative log likelihood of 2*log(roughness parameter), the
     # transformed roughness parameters
 
@@ -40,18 +41,22 @@ negLogLik_Grad <- function(theta, inputs, H, outputs, cor.function, nugget = NUL
     # ensures A=c(inputs,inputs) positive definite
     L <- try(chol(A), silent = TRUE)
     if (class(L) == "try-error")
-        return(negloglik.lim)
+        return(negLogLikGrad.lim)
 
     # # Calculate Q=H^T A^{-1}H via A=LL^T
     w <- try(backsolve(L, H, transpose = TRUE))     # = solve(tL, H)
     if (class(w) == "try-error")
-        return(negloglik.lim)
+        return(negLogLikGrad.lim)
 
     Q <- crossprod(w)                               # = t(w) %*% w
-    # 
+     
     # calculating the gradient
     iA <- chol2inv(L)
-    P <- iA - iA %*% H %*% solve(Q, crossprod(H, iA))
+    
+    P <- try(iA - iA %*% H %*% solve(Q, crossprod(H, iA)), silent = TRUE)
+    if (class(P) == "try-error")
+        return(negLogLikGrad.lim)
+    
     P.outputs <- P %*% outputs
     R <- P - P.outputs %*% solve(crossprod(outputs, P.outputs), crossprod(outputs, P))
     # R2 <- P - tcrossprod(P.outputs)/(n - n.regressors - 2)/sigmahat.prop[1, 1]
