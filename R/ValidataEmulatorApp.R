@@ -7,6 +7,7 @@
 #' @param emulator.predictions Output generated from the \code{\link{predict.emulatorFit}} function. It is an optional argument. 
 #'        If this is not provided it will be calculated using arguments provided. Note Posterior Variance will be calculated, unless you provide this argument. 
 #' @param verbose Defaults to TRUE. If FALSE, text under graphs (explanations) will not appear. 
+
 #' @examples
 #' # Fit the emulator
 #' fit <- fitEmulator(inputs = surfebm[1:25, 1:2], 
@@ -17,7 +18,7 @@
 #' 
 #' # Compare predictions with true values for the new inputs
 #' # Can also compare accuracy of prediction based on posterior variance
-#' validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3], predictions, verbose = FALSE, launch.browser = TRUE)
+#' validateEmulatorApp(fit, surfebm[26:35, 1:2], surfebm[26:35, 3, drop = FALSE], predictions, verbose = FALSE, launch.browser = TRUE)
 #' 
 #' @export
 validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL, emulator.predictions = NULL, verbose = FALSE, ...){
@@ -109,12 +110,12 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
             ),
             
             fluidRow(
-                box(width = 5, status = "primary", background = "blue", title = "Emulator Predictions", 
-                    plotlyOutput("Approx.vs.Truth"), 
+                box(width = 5, status = "primary", background = "blue", title = "Emulator Predictions",
+                    plotlyOutput("Approx.vs.Truth"),
                     if (verbose) {
-                        h4("Plot showing emulator predicted output against the true output. 
-                          The error bars are the 95th percent confidence intervals of the predicted mean. 
-                           Ideally, all the points should be close to the diagonal line, which represents the one to one line, and the points should have small error bars. 
+                        h4("Plot showing emulator predicted output against the true output.
+                          The error bars are the 95th percent confidence intervals of the predicted mean.
+                           Ideally, all the points should be close to the diagonal line, which represents the one to one line, and the points should have small error bars.
                            If you select points using either box select or lasso select, you will be able to see this point on the plot to the left highlighted in red.")
                     }
                 ),
@@ -158,7 +159,6 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
     
     # Server function ---------------------------------------------------------
     server <- function(input, output) {
-        
         selectedOutput <- reactive({
             match(input$selected.output, names(output.names.index))
         })
@@ -183,9 +183,10 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
                 else 
                     post.var <- NULL 
             } else if (emulator$n.outputs != 1) {
+                n.pred <- nrow(emulator.predictions$posterior.mean)
                 if (!is.null(emulator.predictions$posterior.variance)) {
-                    post.var <- emulator.predictions$posterior.variance[(((selectedOutput() - 1)*emulator$n.train) + 1):(selectedOutput()*emulator$n.train),
-                                                                        (((selectedOutput() - 1)*emulator$n.train) + 1):(selectedOutput()*emulator$n.train)]
+                    post.var <- emulator.predictions$posterior.variance[(((selectedOutput() - 1)*n.pred) + 1):(selectedOutput()*n.pred),
+                                                                        (((selectedOutput() - 1)*n.pred) + 1):(selectedOutput()*n.pred)]
                 } else
                     post.var <- NULL
             }
@@ -193,15 +194,14 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
         })
         
         emPredSd <- reactive({
-            
             if (CV) {
                 if (emulator$n.outputs == 1)
                     em.pred.sd <- sqrt(CV.predict$CV.var)
                 else 
                     em.pred.sd <- sqrt(CV.predict$CV.var[, selectedOutput(), drop = FALSE])
-            } else if (!is.null(postVar()))
+            } else if (!is.null(postVar())){
                 em.pred.sd <- matrix(sqrt(diag(postVar())), ncol = 1)
-            else {
+            } else {
                 if (emulator$n.outputs == 1) {
                     if (!is.null(emulator.predictions$standard.deviation))
                         em.pred.sd <- emulator.predictions$standard.deviation[, 1, drop = FALSE]
@@ -236,10 +236,11 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
         residuals <- reactive(newOutputs() - postMean())
         rmse <- reactive({sqrt(mean((residuals()) ^ 2))})
         normrmse <- reactive(rmse()/(max(newOutputs()) - min(newOutputs())))
-        coverage <- reactive(
+
+        coverage <- reactive({
             if (!is.null(emPredSd()))
                 mean(abs(residuals()) < qnorm(0.975) * emPredSd(), na.rm = TRUE)
-        )
+        })
         
         output$RMSE <- renderValueBox(valueBox(paste("RMSE: ", format(rmse()), sep = ""), " ", color = "teal"))
         
@@ -249,16 +250,16 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
         
         # approximations against truth plot (with error bars if possible)
         output$Approx.vs.Truth <- renderPlotly({
-            data <- data.frame("Approximations" = postMean()[,1], truth = newOutputs()[,1], sd = emPredSd()[,1])
-            
+            data <- data.frame("Approximations" = postMean()[,1], "truth" = newOutputs()[,1], "sd" = emPredSd()[,1])
+
             p <- plot_ly(data, source = "Approx.vs.Truth")
-            if (!is.null(emPredSd()))
-                p <- p %>% add_markers(x = ~truth, y = ~Approximations, type = "scatter", mode = "markers", error_y = ~list(value = ~sd), name = " ", hoverinfo = "text",
+            if (!is.null(emPredSd())) {
+                p <- p %>% add_markers(x = ~truth, y = ~Approximations, type = "scatter", mode = "markers", name = " ", hoverinfo = "text", error_y = ~list(value = sd),
                                        text = ~paste("Emulator Prediction: ", format(Approximations),
                                                      "</br> Simulator Output: ", format(truth)))
-            else 
+            } else
                 p <- p %>% add_markers(x = ~truth, y = ~Approximations, type = "scatter", mode = "markers")
-            
+
             p <- p %>% add_trace(x = ~truth, y = ~truth, type = "scatter", mode = "lines", hoverinfo = "none", color = I("orange")) %>%
                 layout(showlegend = FALSE, title = "Emulator predictions against true simulator output",
                        xaxis = list(title = "Simulator Output"),
@@ -269,36 +270,36 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
         # Plot for training and prediction points
         output$training.vs.prediction.plot <- renderPlotly({
             dataset <- cbind(emulator$training.outputs, emulator$training.inputs)
-            
+
             eventdata.selected.approx.truth <- event_data("plotly_selected", source = "Approx.vs.Truth")
             eventdata.selected.qqplot <- event_data("plotly_selected", source = "qqplot")
             eventdata.selected.pcd.plot <- event_data("plotly_selected", source = "pcd.plot")
-            
+
             data <- as.data.frame(cbind("x.var" = dataset[, input$x.variable], "y.var" = dataset[, input$y.variable]))
-            
+
             p <- plot_ly(data, x = ~x.var, y = ~y.var, type = "scatter", mode = "markers", name = "Training<br>Points", source = "training.vs.prediction.plot") %>% #, hoverinfo = 'text', text = __)
                 # add_data(x = ~truth, y = ~truth, mode = "lines", hoverinfo = "skip") %>%
                 layout(showlegend = TRUE, title = "Emulator Training Points" ,
                        xaxis = list(title = input$x.variable),
                        yaxis = list(title = input$y.variable) )
-            
-            if (CV) { 
-                if (!is.null(eventdata.selected.approx.truth)) 
-                    p <- p  %>% add_markers(data = data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points")#, hoverinfo = "skip") 
+
+            if (CV) {
+                if (!is.null(eventdata.selected.approx.truth))
+                    p <- p  %>% add_markers(data = data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points")#, hoverinfo = "skip")
             } else {
-                
+
                 new.data <- as.data.frame(cbind(new.inputs, new.outputs))[, match(c(input$x.variable, input$y.variable), names(inputs.outputs.index))]
                 colnames(new.data) <- c("x.var", "y.var")
-                
-                if (!is.null(eventdata.selected.approx.truth)) 
-                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points<br>(Approx<br>Vs Truth)")#, hoverinfo = "skip") 
-                
-                
-                if (!is.null(eventdata.selected.qqplot)) 
-                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.qqplot$pointNumber),], color = I("darkgreen"), name = "Validation<br>points<br>(QQ plot)")#, hoverinfo = "skip") 
-                
-                if (!is.null(eventdata.selected.pcd.plot)) 
-                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.pcd.plot$pointNumber),], color = I("yellow"), name = "Validation<br>points<br>(PCPE) ")#, hoverinfo = "skip") 
+
+                if (!is.null(eventdata.selected.approx.truth))
+                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.approx.truth$pointNumber),], color = I("red"), name = "Validation<br>points<br>(Approx<br>Vs Truth)")#, hoverinfo = "skip")
+
+
+                if (!is.null(eventdata.selected.qqplot))
+                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.qqplot$pointNumber),], color = I("darkgreen"), name = "Validation<br>points<br>(QQ plot)")#, hoverinfo = "skip")
+
+                if (!is.null(eventdata.selected.pcd.plot))
+                    p <- p  %>% add_markers(data = new.data[(1 + eventdata.selected.pcd.plot$pointNumber),], color = I("yellow"), name = "Validation<br>points<br>(PCPE) ")#, hoverinfo = "skip")
             }
             p %>% layout()
         })
@@ -354,18 +355,22 @@ validateEmulatorApp <- function(emulator, new.inputs = NULL, new.outputs = NULL,
         
         # plot of Mahalonobis distance
         output$MD.plot <- renderPlotly({
+            #for LMC fit emulator$n.regressors is not of length 1 - its of length n.outputs. 
+            n.regressors <- ifelse("emulatorFitLMC" %in% class(emulator), emulator$n.regressors[selectedOutput()], emulator$n.regressors)
+                
+            
             GP.resid <- newOutputs() - postMean()
             MD.stat <- t(GP.resid) %*% solve(postVar(), GP.resid, tol = 1e-100) * 
-                (emulator$n.train - emulator$n.regressors)/n.validation/(emulator$n.train - emulator$n.regressors - 2)
-            lower.tail <- seq(0, qf(0.025, n.validation, emulator$n.train - emulator$n.regressors), length = 100) 
-            middle <- seq(max(lower.tail), qf(0.975, n.validation, emulator$n.train - emulator$n.regressors) * 1.1, length = 100)
-            upper.tail <- seq(max(middle), qf(0.9999, n.validation, emulator$n.train - emulator$n.regressors), length = 100)
+                (emulator$n.train - n.regressors)/n.validation/(emulator$n.train - n.regressors - 2)
+            lower.tail <- seq(0, qf(0.025, n.validation, emulator$n.train - n.regressors), length = 100) 
+            middle <- seq(max(lower.tail), qf(0.975, n.validation, emulator$n.train - n.regressors) * 1.1, length = 100)
+            upper.tail <- seq(max(middle), qf(0.9999, n.validation, emulator$n.train - n.regressors), length = 100)
             x.plot <- c(lower.tail, middle, upper.tail)
             
             if (!(MD.stat > max(x.plot) && MD.stat < min(x.plot)))
                 x.plot <- c(x.plot, seq(max(x.plot), max(MD.stat) * 1.1, length = 100))
             
-            data <- data.frame("x.plot" = x.plot, "Density" = df(x.plot, n.validation, emulator$n.train - emulator$n.regressors))
+            data <- data.frame("x.plot" = x.plot, "Density" = df(x.plot, n.validation, emulator$n.train - n.regressors))
             
             p <- plot_ly(data, x = ~x.plot, y = ~Density, type = "scatter", mode = "lines", hoverinfo = "none") %>% 
                 add_polygons(x = c(data[1:100, "x.plot"], rev(data[1:100, "x.plot"])), y = c(data[1:100, "Density"], rep(0,100)), color = I("steelblue2")) %>% 

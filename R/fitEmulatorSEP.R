@@ -287,6 +287,6 @@ fitEmulatorSEP <- function(inputs, outputs, prior.mean = "linear",
     fit$n.outputs <- n.outputs
     fit$formula = formula
     fit$call <- match.call()  # enabling update function to work
-    
+    # fit$type <- ifelse(n.outputs == 1, "UNI_GPE", "SEP_GPE")
     fit
 } 

@@ -277,6 +277,9 @@ fitEmulatorLMC <- function(inputs, outputs, prior.mean = "linear",
         fit$opt.counts <- opt$counts
     }
     
+    #unstacking training outputs
+    fit$training.outputs <- outputs
+    
     fit$log.lik <- log.lik
     fit$n.regressors <- n.regressors
     fit$n.train <- n.train
@@ -285,7 +288,6 @@ fitEmulatorLMC <- function(inputs, outputs, prior.mean = "linear",
     fit$sigmasq.param <- param
     # enabling update function to work
     fit$call <- match.call()
-    
     fit
 }
 
