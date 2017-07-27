@@ -7,10 +7,10 @@ print.emulatorFit <- function(x, ...) {
     
     if (all(dim(x$sigmasq) > 0)) {
         if (all(dim(x$sigmasq) == c(1, 1))) {
-            cat("Sigmasq: ", x$sigmasq, "\n")
+            cat("Sigmasq: ", x$sigmasq.hat, "\n")
         } else {
             cat("Sigmasq: \n")
-            print(format(x$sigmasq), print.gap = 2L, quote = FALSE)
+            print(format(x$sigmasq.hat), print.gap = 2L, quote = FALSE)
         }
     } else {
         cat("No Sigmasq.Hat\n")}
