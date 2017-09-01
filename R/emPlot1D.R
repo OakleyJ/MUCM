@@ -9,36 +9,58 @@
 #' @return Returns a plot of a single input against output
 #' @note This function requires R package \pkg{ggplot2} to be installed.
 #' @export
-emPlot1D <- function(fit, input = 1, lower = NULL, upper = NULL, alpha = 0.05) {
+emPlot1D <- function(fit, input = 1, alpha = 0.05) {
     if (!requireNamespace("ggplot2", quietly = TRUE))
         stop("this function requires R package ggplot2 to be installed")
     
     # ensure new and old fits are backward compatible
     fit <- updateFit(fit)
     
-    if (is.null(lower)) 
-        lower <- min(fit$training.inputs[, input, drop = FALSE])
-    if (is.null(upper)) 
-        upper <- max(fit$training.inputs[, input, drop = FALSE])
+    df1 <- NULL
+    df2 <- NULL
     
-    newinputs <- matrix(apply(fit$training.inputs, 2, mean), 
-                    nrow = 100, ncol = ncol(fit$training.inputs), byrow = T)
-    newinputs[, input] <- seq(from = lower, to = upper, length = 100)
-    colnames(newinputs) <- colnames(fit$training.inputs)
     
-    predictions <- predict(fit, newinputs)
-    df1 <- data.frame(x = fit$training.inputs[, input], y = fit$training.outputs[,1])
-    df2 <- data.frame(x = newinputs[, input], m = predictions$posterior.mean[, 1])
-    
-    if (!is.null(predictions$posterior.variance)) {
-        df2$s <- diag(predictions$posterior.variance) ^ 0.5
-    } else if (!is.null(predictions$standard.deviation)) {
-        df2$s <- predictions$standard.deviation
+    for(i in input){
+        newinputs <- matrix(apply(fit$training.inputs, 2, mean), 
+                            nrow = 100, ncol = ncol(fit$training.inputs), byrow = T)
+        lower <- min(fit$training.inputs[, i, drop = FALSE])
+        upper <- max(fit$training.inputs[, i, drop = FALSE])
+        newinputs[, i] <- seq(from = lower, to = upper, length = 100)
+        colnames(newinputs) <- colnames(fit$training.inputs)
+        
+        predictions <- predict(fit, newinputs)
+        
+        df.temp <- data.frame(x = newinputs[, i],
+                              m = predictions$posterior.mean[, 1],
+                              input.name = rep(colnames(newinputs)[i], 100))
+        
+        if (!is.null(predictions$posterior.variance)) {
+            df.temp$s <- diag(predictions$posterior.variance) ^ 0.5
+        } else if (!is.null(predictions$standard.deviation)) {
+            df.temp$s <- predictions$standard.deviation
+        }
+        
+        df1 <- rbind(df1, data.frame(x = fit$training.inputs[, i],
+                                     y = fit$training.outputs[,1],
+                                     input.name = rep(colnames(newinputs)[i], fit$n.train)))
+        
+        
+        df2 <- rbind(df2, df.temp)
+        
     }
     
-    p <- ggplot2::ggplot(df1)
-    p + ggplot2::geom_point(ggplot2::aes(x = x, y = y)) + 
+    
+    
+    ggplot2::ggplot(df2) +   
         ggplot2::geom_line(data = df2, ggplot2::aes(x = x, y = m), col = "red") + 
-        ggplot2::geom_ribbon(data = df2, ggplot2::aes(x = x, ymax = m + 2 * s, ymin = m - 2 * s),
-                             fill = "red", alpha = I(0.5))
+        ggplot2::facet_wrap(~ input.name, scales = "free_x") + 
+        ggplot2::geom_ribbon(data = df2, 
+                             ggplot2::aes(x = x, ymax = m + 2 * s, ymin = m - 2 * s),
+                             fill = "red", alpha = I(0.5)) +
+        ggplot2::geom_point(data = df1, ggplot2::aes(x = x, y = y))
+    
 } 
+
+
+
+

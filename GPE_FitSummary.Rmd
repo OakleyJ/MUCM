@@ -4,39 +4,91 @@ date: "`r format(Sys.time(), '%d %B %Y, %H:%M')`"
 output: html_document
 ---
 
-# The emulator fit
-+ This GPE was trained with `r fit$n.train` runs. 
+### Training data
 
-+ The input variables used were: `r colnames(fit$training.inputs)`.  
-
-+ The output variables used were: `r colnames(fit$training.outputs)`.   
-
-+ Below are a few summary statistics of the training inputs and outputs. 
+Inputs and ranges:
 
 ```{r, echo = FALSE, results='asis'}
-stargazer::stargazer(cbind(fit$training.inputs, fit$training.outputs), summary = TRUE, 
-                     type = "latex", title = "Summary of training data", nobs = FALSE, header=FALSE, iqr = TRUE)
+xr <- t(apply(fit$training.inputs, 2, range))
+colnames(xr) <- c("minimum", "maximum")
+xr <- signif(xr, 3)
+knitr::kable(xr, padding = 0)
+#stargazer::stargazer(xr, type = "html", header=FALSE)
 ```
 
-<!-- # Prior Mean function -->
-+ The mean function used for the prior distribution was:   
-`r format(fit$formula)`
+Number of training runs: `r fit$n.train` 
 
+### Prior mean function
+
+Formula for the prior mean function:
+  
+` `r format(fit$formula)` `
+
+Posterior mean of the coefficients $\hat{\beta}$:
+```{r, echo = FALSE, results='asis'}
+stargazer::stargazer(fit$betahat, type = "html", header=FALSE)
+```
+
+#### Comparison of fitted values $h(x)^T\hat{\beta}$ with training outputs
+```{r, echo = F}
+f <- fit$H.training %*% fit$betahat
+y <- fit$training.outputs
+plot(y, f, pch = 16,
+     xlab = "training output",
+     ylab = "prior mean fitted value",
+     xlim = range(f, y),
+     ylim = range(f, y))
+abline(0, 1, lty = 2)
+```
+
+
+### Correlation function
 
 ```{r, echo=FALSE}
 # define correlation function used
 if (isTRUE(all.equal(corMatern2.5, fit$cor.function))) {
-    cor.funct <- "Matern 2.5"
+    cor.funct <- "Matern 2.5 and the equation is " 
+    equation <- paste0("\\[c(\\mathbf{x,x'}) = \\sigma^2 \\frac{1}{\\Gamma(\\nu) 2^{\\nu - 1}} \\left(\\sqrt{2\\nu}r \\right)^\\nu K_\\nu \\left(\\sqrt{2\\nu}r \\right) \\] \\n  where $\\Gamma$ is the gamma function, $K_\\nu$ is the modified Bessel function, where $\\nu = 2.5$ and $r$ is distance between inputs $x$ and $x'$, scaled by $\\mathbf{\\delta}$ as:
+\\[ \\Big[ \\frac{(x_{1}-x'_{1})^2}{\\delta_1^2} +...+ \\frac{(x_{p}-x'_{p})^2}{\\delta_p^2}  \\Big]^{0.5}.\\]")
+    
 } else if (isTRUE(all.equal(corGaussian, fit$cor.function))) {
-    cor.funct <- "Gaussian"
+    cor.funct <- "Gaussian and the equation is " 
+    equation <- paste0("\\[c(\\mathbf{x,x'}) = \\prod_{i=1}^{p} \\exp \\left[ -\\left( \\dfrac{\\mathbf{x}_i-\\mathbf{x}_i'}{\\mathbf{\\delta}_i} \\right) ^2\\right].\\]") 
+        
 } else if (isTRUE(all.equal(corGaussianPeriodic, fit$cor.function))) {
     cor.funct <- "Gaussian Periodic"
-} else 
-    cor.funct <- fit$formula
+    equation <- NULL
+} else { 
+    cor.funct <- "user defined."
+    equation <- NULL
+}
 ```
 
-+ The correlation function used in the analysis was:  
-`r cor.funct`
++ Correlation function:  
+`r paste(cor.funct, equation)`
+
+```{r, echo = FALSE, results = 'asis'}
+w <- apply(fit$training.inputs, 2, range)
+delta <- exp(fit$phi.hat)
+delta.scaled <- delta / (w[2, ] - w[1, ])
+stargazer::stargazer(data.frame(delta = delta, 
+                                delta.scaled = delta.scaled), type = "html", summary = FALSE)
+```
+```{r, echo = FALSE, results = 'asis'}
+knitr::kable(data.frame(data.frame(delta = delta, 
+                                delta.scaled = delta.scaled)))
+```
+
+
++ $4\hat{\sigma} = `r signif(4 * sqrt(fit$sigmasq.hat), 3) `$ 
++ output range: `r signif(max(fit$training.outputs) - min(fit$training.outputs), 3)`
++ Posterior mean $\hat{\sigma}^2$  
+```{r, echo = FALSE, results='asis'}
+stargazer::stargazer(fit$sigmasq.hat,
+                     type = "html", nobs = FALSE, header=FALSE, iqr = TRUE)
+```
+
+
 
 ```{r, echo=FALSE}
 if (!is.null(fit$opt.convergence)) {
@@ -54,27 +106,26 @@ if (!is.null(fit$opt.convergence)) {
 ```
 + The `r fit$optim.method` method was used for optimisation. The `r conv`. 
 
-+ The roughness parameters (posterior mean of $\hat\beta$) were calculated as:
-```{r, echo = FALSE, results='asis'}
-stargazer::stargazer(fit$betahat,
-                     type = "latex", title = "posterior mean of $\\hat\\beta$", header=FALSE)
-```
 
-+ The sigma square parameter was estimated as:  
-```{r, echo = FALSE, results='asis'}
-stargazer::stargazer(fit$sigmasq.hat,
-                     type = "latex", title = "posterior mean of $\\hat\\sigma^2$", nobs = FALSE, header=FALSE, iqr = TRUE)
-```
 
+<br>
+  
+
+
+
+# Scatter plots
++ Plots of output against each input, emulator mean and point-wise 95% intervals
+```{r, echo = FALSE, fig.show='asis', fig.pos="h"}
+emPlot1D(fit, input = 1:ncol(fit$training.inputs))
+```
 
 # Cross validation analysis
-+ Leave one out cross validation (LOOCV) was carried out. The following is a plot of the predictions (calculated using LOOCV) against the true output."
-
++ Leave one out cross validation (LOOCV) was carried out. The following is a plot of the predictions (calculated using LOOCV) against the true output.  
 ```{r, echo = FALSE, fig.show='asis', fig.pos="h"}
 CV.fit <- crossVal(fit)
 ```
-+ The root mean square error was calculated as ", `r format(CV.fit$mean.RMSE)`, "and the normalised root mean square error was  `r format(CV.fit$mean.RMSE/(max(fit$training.outputs) - min(fit$training.outputs)))`.  
-
+<br>
++ The root mean square error was calculated as `r format(CV.fit$mean.RMSE)` and the normalised root mean square error was  `r format(CV.fit$mean.RMSE/(max(fit$training.outputs) - min(fit$training.outputs)))`.  
 
 #Session Info
 Please note that the MUCM package version used is `r packageVersion("MUCM")`. 
@@ -91,5 +142,5 @@ dependencies <- data.frame("Package Name" = Package_Name, "Package Version" = ve
 
 ```{r, echo = FALSE, results='asis'}
 stargazer::stargazer(dependencies, summary = FALSE,
-                     type = "latex", title = "Dependencies on the MUCM package", header=FALSE)
+                     type = "html", title = "Dependencies on the MUCM package", header=FALSE)
 ```
