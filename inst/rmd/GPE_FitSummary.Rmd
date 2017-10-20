@@ -1,0 +1,150 @@
+---
+title: "Summary report for the GPE"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M')`"
+output: html_document
+
+---
+
+### Training data
+
+Inputs and ranges:
+
+```{r, echo = FALSE, results='asis'}
+library(MUCM)
+#load fit data
+load("D:/Work/R/MUCM/TempFit.RData")
+
+xr <- t(apply(fit$training.inputs, 2, range))
+colnames(xr) <- c("minimum", "maximum")
+xr <- signif(xr, 3)
+knitr::kable(xr, padding = 0)
+```
+
+Output ranges:
+
+```{r, echo = FALSE, results='asis'}
+yr <- t(apply(fit$training.outputs, 2, range))
+colnames(yr) <- c("minimum", "maximum")
+yr <- signif(yr, 3)
+knitr::kable(yr, padding = 0)
+```
+
+Number of training runs: `r fit$n.train` 
+
+### Prior mean function
+
+Formula for the prior mean function:
+  
+` `r format(fit$formula)` `
+
+### Posterior mean of the coefficients $\hat{\beta}$:
+
+```{r, echo = FALSE, results='asis'}
+knitr::kable(fit$betahat, padding = 0) #fit$betahat
+```
+
+### Comparison of fitted values $h(x)^T\hat{\beta}$ with training outputs
+```{r, echo = F}
+f <- fit$H.training %*% fit$betahat
+y <- fit$training.outputs
+plot(y, f, pch = 16,
+     xlab = "training output",
+     ylab = "prior mean fitted value",
+     xlim = range(f, y),
+     ylim = range(f, y))
+abline(0, 1, lty = 2)
+```
+
+
+### Correlation function
+
+```{r, echo=FALSE}
+# define correlation function used
+if (isTRUE(all.equal(corMatern2.5, fit$cor.function))) {
+    cor.funct <- "Matern 2.5 which is given by the following equation:" 
+    equation <- paste0("\\[c(\\mathbf{x,x'}) = \\sigma^2 \\frac{1}{\\Gamma(\\nu) 2^{\\nu - 1}} \\left(\\sqrt{2\\nu}r \\right)^\\nu K_\\nu \\left(\\sqrt{2\\nu}r \\right) \\] \\n  where $\\Gamma$ is the gamma function, $K_\\nu$ is the modified Bessel function, where $\\nu = 2.5$ and $r$ is distance between inputs $x$ and $x'$, scaled by $\\mathbf{\\delta}$ as:
+\\[ \\Big[ \\frac{(x_{1}-x'_{1})^2}{\\delta_1^2} +...+ \\frac{(x_{p}-x'_{p})^2}{\\delta_p^2}  \\Big]^{0.5}.\\]")
+    
+} else if (isTRUE(all.equal(corGaussian, fit$cor.function))) {
+    cor.funct <- "Gaussian which is given by the following equation:" 
+    equation <- paste0("\\[c(\\mathbf{x,x'}) = \\prod_{i=1}^{p} \\exp \\left[ -\\left( \\dfrac{\\mathbf{x}_i-\\mathbf{x}_i'}{\\mathbf{\\delta}_i} \\right) ^2\\right].\\]") 
+        
+} else if (isTRUE(all.equal(corGaussianPeriodic, fit$cor.function))) {
+    cor.funct <- "Gaussian Periodic"
+    equation <- NULL
+} else { 
+    cor.funct <- "user defined."
+    equation <- NULL
+}
+```
+
++ Correlation function: `r paste(cor.funct, equation)`
+
+```{r, echo = FALSE, results = 'asis'}
+w <- apply(fit$training.inputs, 2, range)
+delta <- exp(fit$phi.hat)
+delta.scaled <- delta / (w[2, ] - w[1, ])
+```
+
+```{r, echo = FALSE, results = 'asis'}
+knitr::kable(data.frame("input.variables" = colnames(fit$training.inputs), delta = delta, delta.scaled = delta.scaled), padding = 0, row.names = F, align = "c")
+```
+
+
++ $4\hat{\sigma} = `r signif(4 * sqrt(fit$sigmasq.hat), 3) `$ 
+<!-- + output range: `r signif(max(fit$training.outputs) - min(fit$training.outputs), 3)` -->
++ Posterior mean $\hat{\sigma}^2$:   
+```{r, echo = FALSE, results='asis'}
+knitr::kable(cbind.data.frame("input.variables" = colnames(fit2$training.outputs), as.data.frame(fit2$sigmasq.hat)), row.names = F, padding = 0)
+```
+
+```{r, echo=FALSE}
+if (!is.null(fit$opt.convergence)) {
+    if (fit$opt.convergence == 0) {
+        conv <- "optimisation was successful"
+    } else if (fit$opt.convergence == 1) {
+        conv <- "optimisation reached iteration limit"
+    } else 
+        conv <- paste("optimisation may not have succeeded - Convergence code:", fit$opt.convergence, "(See ?optim for more details)")
+    # conv <- cat("Convergence: ", conv, "\n")
+    # if (!is.null(fit$opt.message)) {
+    #     cat("Message:", fit$opt.message, "\n")
+}
+```
+
++ The `r fit$optim.method` method was used for optimisation. The `r conv`. 
+
+<br>
+  
+
+### Scatter plots
++ Plots of output against each input, emulator mean and point-wise 95% intervals
+```{r, echo = FALSE, fig.show='asis', fig.pos="h"}
+emPlot1D(fit, input = 1:ncol(fit$training.inputs))
+```
+
+### Cross validation analysis
++ Leave one out cross validation (LOOCV) was carried out. The following is a plot of the predictions (calculated using LOOCV) against the true output.  
+```{r, echo = FALSE, fig.show='asis', fig.pos="h"}
+CV.fit <- crossVal(fit)
+```
+<br>
++ The root mean square error was calculated as **`r format(CV.fit$mean.RMSE)`** and the normalised root mean square error was  **`r format(CV.fit$mean.RMSE/(max(fit$training.outputs) - min(fit$training.outputs)))`**.  
+
+### Session Info
+Please note that the MUCM package version used is `r packageVersion("MUCM")`. 
+The package depends on the following packages. The version number indicates the version number of the package being used. 
+```{r, echo=FALSE}
+installedPackages <- installed.packages()
+Package_Name <- unlist(strsplit(installedPackages[which(rownames(installedPackages)=="MUCM"), "Imports", drop = F],", ")[[1]])
+Package_Name <- c("MUCM", Package_Name)
+version <- vector(mode = "character")
+for (i in Package_Name){
+    version <- c(version, paste(packageVersion(i)))
+}
+dependencies <- data.frame("Package Name" = Package_Name, "Package Version" = version)
+``` 
+
+```{r, echo = FALSE, results='asis'}
+knitr::kable(dependencies, summary = FALSE, title = "Dependencies on the MUCM package")
+```

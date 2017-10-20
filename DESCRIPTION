@@ -1,15 +1,15 @@
 Package: MUCM
 Type: Package
 Title: Gaussian process emulator methods based on the MUCM toolkit
-Version: 0.2-5
-Date: 2016-09-12
-Author: Sajni Malde, Jeremy Oakley, David Wyncoll
+Version: 0.2-6
+Date: 2017-10-19
+Author: Sajni Malde, Jeremy Oakley, David Wyncoll, Ye Liu
 Maintainer: Jeremy Oakley <j.oakley@sheffield.ac.uk>
 Description: Gaussian process emulator methods based on the MUCM toolkit.
 License: GPL-2 | GPL-3
 Depends: R (>= 2.10)
 Imports: mvtnorm, Formula, fields
-Suggests: Hmisc, ggplot2, shiny, plotly, shinythemes
+Suggests: Hmisc, ggplot2, shiny, plotly, shinythemes, rmarkdown, pander
 LazyData: yes
 ByteCompile: yes
 NeedsCompilation: no
